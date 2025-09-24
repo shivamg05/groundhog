@@ -191,6 +191,21 @@ class WebAgent:
 
         return snapshot
 
+    def scroll(self, direction):
+        try:
+            if direction == "down":
+                self.driver.execute_script("window.scrollBy(0, window.innerHeight);")
+            elif direction == "up":
+                self.driver.execute_script("window.scrollBy(0, -window.innerHeight);")
+            elif direction == "bottom":
+                self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            elif direction == "top":
+                self.driver.execute_script("window.scrollTo(0, 0);")
+            else:
+                print(f"[❌ Unknown scroll direction: {direction}]")
+        except Exception as e:
+            print(f"[Scroll Failed] {e}")
+
     def _build_selector(self, element: WebElement) -> str:
         tag = element.tag_name
         el_id = element.get_attribute("id")
@@ -221,9 +236,13 @@ class WebAgent:
             self.click_element(selector, wait_for)
         elif action_type == "type":
             self.type_into_element(selector, text, wait_for)
+        elif action_type == "scroll":
+            self.scroll(text)
         elif action_type == "finish":
             print("[✅ Task complete]")
-            return True
+            if text:
+                print(f"[🔎 Final Result] {text}")
+            return text or True
         else:
             print(f"[❌ Unknown action type: {action_type}]")
             return False

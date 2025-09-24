@@ -15,7 +15,13 @@ def get_next_action(image_path, goal_text, dom_snapshot=None):
 
     # Master prompt with formatting constraint
     prompt = f"""
-        You are an expert web automation agent. Based on the provided screenshot and the high-level goal, determine the single next action to take. The available actions are 'click', 'type', and 'finish'. Respond ONLY with a JSON object containing your reasoning and the action.
+        You are an expert web automation agent. Based on the provided screenshot and the high-level goal, determine the single next action to take. The available actions are 'click', 'type', 'scroll', and 'finish'. Respond ONLY with a JSON object containing your reasoning and the action.
+
+        The scroll action has the following format:
+        - "selector" should be empty.
+        - "text" should be one of: "down", "up", "top", "bottom".
+
+        The finish action means the task is complete. In that case, include the final result (e.g. extracted information or answer to the overall goal) inside the "text" field. The selector can be left empty.
 
         High-Level Goal: {goal_text}
 
@@ -23,7 +29,7 @@ def get_next_action(image_path, goal_text, dom_snapshot=None):
         {{
         "reasoning": "A brief thought process on why you are choosing this action.",
         "action": {{
-            "type": "click" | "type" | "finish",
+            "type": "click" | "type" | "scroll" | "finish",
             "selector": "CSS selector for the element, if applicable.",
             "text": "The text to type, if applicable."
         }}

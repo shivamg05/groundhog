@@ -1,30 +1,30 @@
 from web_agent import WebAgent
 from agent_logic import get_next_action
 
-# agent = WebAgent()
-# agent.go_to_url("https://books.toscrape.com", "div.page_inner")
-# agent.take_screenshot("data/task1/step1_homepage.png")
-# agent.click_element(".product_pod h3 a", "div.page_inner")
-# agent.take_screenshot("data/task1/step2_book_detail.png")
-# agent.quit()
-
 agent = WebAgent()
-agent.go_to_url("https://books.toscrape.com", "div.page_inner")
 
-goal = "Find the rating of the first Mystery book"
-count = 0
+goals = ["Find the rating of the first Mystery book", "Find the last book on the first page. The page is scrollable."]
+goal_count = 0
 
-while True:
-    screenshot_path = f"data/task1/step{count}.png"
-    agent.take_screenshot(screenshot_path)
-    snapshot = agent.get_page_snapshot()
+for goal in goals:
 
-    action_info = get_next_action(screenshot_path, goal, snapshot)
+    agent.go_to_url("https://books.toscrape.com", "div.page_inner")
 
-    finished = agent.act(action_info, "div.page_inner")
+    step_count = 0
+    while True:
+        screenshot_path = f"data/task{goal_count}/step{step_count}.png"
+        agent.take_screenshot(screenshot_path)
+        snapshot = agent.get_page_snapshot()
 
-    count+=1
+        action_info = get_next_action(screenshot_path, goal, snapshot)
 
-    if finished:
-        agent.quit()
-        break
+        finished = agent.act(action_info, "div.page_inner")
+
+        step_count+=1
+
+        if finished:
+            break
+    
+    goal_count+=1
+
+agent.quit()
