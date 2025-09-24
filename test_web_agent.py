@@ -1,4 +1,4 @@
-from webAgent import WebAgent
+from web_agent import WebAgent
 from agent_logic import get_next_action
 
 # agent = WebAgent()
@@ -24,7 +24,7 @@ while True:
     finished = agent.act(action_info, "div.page_inner")
 
     count+=1
-    
+
     if finished:
         agent.quit()
         break
