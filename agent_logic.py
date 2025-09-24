@@ -36,7 +36,7 @@ def get_next_action(image_path, goal_text, dom_snapshot=None):
 
     # Call the GPT-4o-mini Vision model
     response = openai.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-4.1",
         messages=[
             {
                 "role": "system",

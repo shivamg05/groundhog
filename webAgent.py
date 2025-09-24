@@ -92,14 +92,69 @@ class WebAgent:
     
     def type_into_element(self, css_selector, text, wait_for="body"):
         try:
-            element = self.driver.find_element(By.CSS_SELECTOR, css_selector)
-            element.clear()
-            element.send_keys(text)
-            WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, wait_for))
-            )
+            # Handle :contains("text")
+            if ":contains(" in css_selector:
+                tag, content = css_selector.split(":contains(")
+                content = content.strip(")").strip("'\"")
+                elements = self.driver.find_elements(By.CSS_SELECTOR, tag or "*")
+                for el in elements:
+                    if content in el.text:
+                        el.clear()
+                        el.send_keys(text)
+                        WebDriverWait(self.driver, 10).until(
+                            EC.presence_of_element_located((By.CSS_SELECTOR, wait_for))
+                        )
+                        return
+                raise Exception(f"No element with text '{content}' found for selector '{css_selector}'.")
+
+            # Handle :eq(n)
+            elif ":eq(" in css_selector:
+                tag, index = css_selector.split(":eq(")
+                index = int(index.strip(")"))
+                elements = self.driver.find_elements(By.CSS_SELECTOR, tag or "*")
+                el = elements[index]
+                el.clear()
+                el.send_keys(text)
+                WebDriverWait(self.driver, 10).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, wait_for))
+                )
+                return
+
+            # Handle :first
+            elif css_selector.endswith(":first"):
+                tag = css_selector.replace(":first", "")
+                elements = self.driver.find_elements(By.CSS_SELECTOR, tag or "*")
+                el = elements[0]
+                el.clear()
+                el.send_keys(text)
+                WebDriverWait(self.driver, 10).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, wait_for))
+                )
+                return
+
+            # Handle :last
+            elif css_selector.endswith(":last"):
+                tag = css_selector.replace(":last", "")
+                elements = self.driver.find_elements(By.CSS_SELECTOR, tag or "*")
+                el = elements[-1]
+                el.clear()
+                el.send_keys(text)
+                WebDriverWait(self.driver, 10).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, wait_for))
+                )
+                return
+
+            # Regular CSS selector
+            else:
+                element = self.driver.find_element(By.CSS_SELECTOR, css_selector)
+                element.clear()
+                element.send_keys(text)
+                WebDriverWait(self.driver, 10).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, wait_for))
+                )
         except Exception as e:
             print(f"[Typing Failed] {e}")
+
 
     def quit(self):
         self.driver.quit()
@@ -127,13 +182,12 @@ class WebAgent:
                     })
 
                     if len(snapshot) >= max_elements:
-                        print(snapshot)
+                        print("[Truncated Snapshot Retrieved]")
                         return snapshot
                 except Exception:
                     continue
     
-        print(snapshot)
-        sys.stdout.flush()
+        print("[Snapshot Retrieved]")
 
         return snapshot
 
@@ -149,3 +203,29 @@ class WebAgent:
             return f"{tag}.{classes}"
         else:
             return tag
+
+    def act(self, action_info, wait_for="body"):
+        if not action_info or "action" not in action_info:
+            print("[❌ Invalid action_info]")
+            return False
+
+        print(action_info)
+        action = action_info["action"]
+        action_type = action.get("type")
+        selector = action.get("selector", "")
+        text = action.get("text", "")
+
+        print(f"[Agent Acting] type: {action_type}, selector: {selector}, text: {text}")
+
+        if action_type == "click":
+            self.click_element(selector, wait_for)
+        elif action_type == "type":
+            self.type_into_element(selector, text, wait_for)
+        elif action_type == "finish":
+            print("[✅ Task complete]")
+            return True
+        else:
+            print(f"[❌ Unknown action type: {action_type}]")
+            return False
+
+        return False  # Not finished yet
