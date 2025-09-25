@@ -30,7 +30,7 @@ def get_next_action(image_path, goal_text, dom_snapshot=None):
         "reasoning": "A brief thought process on why you are choosing this action.",
         "action": {{
             "type": "click" | "type" | "scroll" | "finish",
-            "selector": "CSS selector for the element, if applicable.",
+            "selector": "the exact CSS selector for the element, if applicable.",
             "text": "The text to type, if applicable."
         }}
         }}
@@ -42,7 +42,7 @@ def get_next_action(image_path, goal_text, dom_snapshot=None):
 
     # Call the GPT-4o-mini Vision model
     response = openai.chat.completions.create(
-        model="gpt-4.1",
+        model="gpt-4o",
         messages=[
             {
                 "role": "system",
