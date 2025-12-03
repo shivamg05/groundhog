@@ -24,7 +24,7 @@ class TestBrowserIntegration(unittest.TestCase):
     def test_navigation_and_stamping(self):
         """
         Verifies that we can navigate to a page and that our 
-        JS script successfully stamps 'data-m2w-id' on elements.
+        JS script successfully stamps 'data-m2w-id' on elements
         """
         print("\n--- Testing Navigation & Stamping ---")
         url = "https://example.com"
@@ -75,6 +75,31 @@ class TestBrowserIntegration(unittest.TestCase):
         
         self.assertIn("iana.org", current_url, "Browser should have navigated to IANA after click")
         print("✅ Click action successful.")
+
+
+    def test_processor_integration(self):
+        """
+        Verifies that the Processor can distill the HTML captured by the Browser.
+        """
+        from core.processor import Processor
+        
+        print("\n--- Testing Processor Integration ---")
+        self.browser.navigate("https://google.com")
+        _, raw_html = self.browser.capture_state()
+        
+        processor = Processor()
+        dom_text = processor.distill_dom(raw_html)
+        
+        print("Distilled DOM snippet:")
+        print(dom_text[:1000] + "...") # Print first 300 chars
+        
+        # Check for Sentinel
+        self.assertIn("[0] <option>", dom_text)
+        
+        # Check for our link ID (The regex finds [123] <a> format)
+        self.assertRegex(dom_text, r"\[\d+\] <a")
+        print("✅ Processor successfully distilled HTML.")
+
 
 if __name__ == "__main__":
     unittest.main()
