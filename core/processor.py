@@ -1,9 +1,12 @@
 import re
 from bs4 import BeautifulSoup
+from PIL import Image
 
 class Processor:
     def __init__(self, max_elements=200):
         self.max_elements = max_elements
+        self.TARGET_WIDTH = 1024
+        self.MAX_HEIGHT = 1280
 
     def clean_text(self, text, max_len=60):
         """Truncate text to save tokens, but keep enough to be readable."""
@@ -100,11 +103,30 @@ class Processor:
                 line = " ".join(line.split())
                 candidates.append(line)
 
-        # 3. Safety Limit
+        # safety limit
         if len(candidates) > self.max_elements:
             candidates = candidates[:self.max_elements]
 
         return "\n".join(candidates)
+    
+    def process_image(self, image):
+        """
+        Resizes and crops the screenshot exactly as done during training.
+        This prevents distribution shift.
+        """
+        # calculate new height to preserve aspect ratio based on fixed width
+        w_percent = (self.TARGET_WIDTH / float(image.size[0]))
+        h_size = int((float(image.size[1]) * float(w_percent)))
+
+        # resize the image (High Quality)
+        img_resized = image.resize((self.TARGET_WIDTH, h_size), Image.LANCZOS)
+
+        # smart Crop (Viewport Simulation)
+        # If the resulting image is too tall, chop off the bottom
+        if h_size > self.MAX_HEIGHT:
+            img_resized = img_resized.crop((0, 0, self.TARGET_WIDTH, self.MAX_HEIGHT))
+            
+        return img_resized
 
     def format_prompt(self, goal, distilled_dom):
         """
