@@ -19,18 +19,18 @@ finetuned qwen2.5-VL-7B to be the brains of an anutonomous web agent
 ### Model Description
 
 <!-- Provide a longer summary of what this model is. -->
-Inputs:
+#### Inputs:
 - Long-horizon natural language goal
 - Web screenshot
 - Processed snapshot of web page DOM
-Outputs:
+#### Outputs:
 - JSON containing:
     - operation: click, type, select
     - element id: id of html element to perform operation on
     - value: text input to the operation (if necessary)
     - is_finished: boolean describing whether overall goal has been achieved
 
-
+######
 - **Developed by:** Shivam Garg
 - **Funded by [optional]:** Shivam Garg
 - **Shared by [optional]:** Shivam Garg
