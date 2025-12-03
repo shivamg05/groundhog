@@ -13,12 +13,8 @@ tags:
 <!-- Provide a quick summary of what the model is/does. -->
 finetuned qwen2.5-VL-7B to be the brains of an anutonomous web agent
 
-
 ## Model Details
 
-### Model Description
-
-<!-- Provide a longer summary of what this model is. -->
 #### Inputs:
 - Long-horizon natural language goal
 - Web screenshot
@@ -30,7 +26,10 @@ finetuned qwen2.5-VL-7B to be the brains of an anutonomous web agent
     - value: text input to the operation (if necessary)
     - is_finished: boolean describing whether overall goal has been achieved
 
-######
+### Model Description
+
+<!-- Provide a longer summary of what this model is. -->
+
 - **Developed by:** Shivam Garg
 - **Funded by [optional]:** Shivam Garg
 - **Shared by [optional]:** Shivam Garg
