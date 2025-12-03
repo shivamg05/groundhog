@@ -1,5 +1,5 @@
 ---
-base_model: ''
+base_model: 'Qwen/Qwen2.5-VL-7B-Instruct'
 library_name: peft
 pipeline_tag: text-generation
 tags:
@@ -11,7 +11,7 @@ tags:
 # Model Card for Model ID
 
 <!-- Provide a quick summary of what the model is/does. -->
-
+finetuned qwen2.5-VL-7B to be the brains of an anutonomous web agent
 
 
 ## Model Details
@@ -19,14 +19,23 @@ tags:
 ### Model Description
 
 <!-- Provide a longer summary of what this model is. -->
+Inputs:
+- Long-horizon natural language goal
+- Web screenshot
+- Processed snapshot of web page DOM
+Outputs:
+- JSON containing:
+    - operation: click, type, select
+    - element id: id of html element to perform operation on
+    - value: text input to the operation (if necessary)
+    - is_finished: boolean describing whether overall goal has been achieved
 
 
-
-- **Developed by:** [More Information Needed]
-- **Funded by [optional]:** [More Information Needed]
-- **Shared by [optional]:** [More Information Needed]
-- **Model type:** [More Information Needed]
-- **Language(s) (NLP):** [More Information Needed]
+- **Developed by:** Shivam Garg
+- **Funded by [optional]:** Shivam Garg
+- **Shared by [optional]:** Shivam Garg
+- **Model type:** Vision-Language Model
+- **Language(s) (NLP):** English
 - **License:** [More Information Needed]
 - **Finetuned from model [optional]:** [More Information Needed]
 
