@@ -34,9 +34,9 @@ class Browser:
         # Load the JS stamper script
         # Default assumption: scripts/stamp_page.js is relative to the project root
         if script_path is None:
-            # Resolves to: groundhog_agent/core/../../scripts/stamp_page.js
+            # Resolves to: core/../../scripts/stamp_page.js
             current_dir = os.path.dirname(os.path.abspath(__file__))
-            script_path = os.path.join(current_dir, "..", "..", "scripts", "stamp_page.js")
+            script_path = os.path.join(current_dir, "..", "scripts", "stamp_page.js")
         
         if os.path.exists(script_path):
             with open(script_path, "r") as f:

@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 # Add the project root to sys.path so we can import the agent modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from groundhog_agent.core.browser import Browser
+from core.browser import Browser
 
 class TestBrowserIntegration(unittest.TestCase):
     
