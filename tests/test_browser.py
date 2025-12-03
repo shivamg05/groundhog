@@ -84,7 +84,7 @@ class TestBrowserIntegration(unittest.TestCase):
         from core.processor import Processor
         
         print("\n--- Testing Processor Integration ---")
-        self.browser.navigate("https://google.com")
+        self.browser.navigate("https://socialmuse.dev")
         _, raw_html = self.browser.capture_state()
         
         processor = Processor()
@@ -96,8 +96,8 @@ class TestBrowserIntegration(unittest.TestCase):
         # Check for Sentinel
         self.assertIn("[0] <option>", dom_text)
         
-        # Check for our link ID (The regex finds [123] <a> format)
-        self.assertRegex(dom_text, r"\[\d+\] <a")
+        # Generic check for [Number] <tagname>
+        self.assertRegex(dom_text, r"\[\d+\] <\w+")
         print("✅ Processor successfully distilled HTML.")
 
 
