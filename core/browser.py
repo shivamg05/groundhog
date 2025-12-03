@@ -18,6 +18,8 @@ class Browser:
         """
         Initializes the Chrome driver and loads the stamping script
         """
+        self.max_id = 0
+
         options = Options()
         if headless:
             options.add_argument("--headless=new")
@@ -67,7 +69,8 @@ class Browser:
         # 1. Inject IDs
         # We execute the script we loaded. It returns the max ID used (useful for debugging)
         max_id = self.driver.execute_script(self.stamper_js)
-        print(f"[Browser] Stamped page. Max ID: {max_id}")
+        self.max_id = int(max_id)
+        print(f"[Browser] Stamped page. Max ID: {self.max_id}")
 
         # 2. Get HTML
         # We need the outerHTML of the document element to get the attributes we just added
@@ -83,14 +86,26 @@ class Browser:
     def execute_action(self, action, element_id, value=None):
         """
         Executes an action on a specific element identified by the VLM.
-        
-        Args:
-            action (str): 'click', 'type', 'select'
-            element_id (str): The ID assigned by stamp_page.js (e.g., '15')
-            value (str): Text to type or option to select.
+        Returns True if successful, False otherwise.
         """
-        if element_id == "0" or element_id is None:
-            print(f"[Browser] Action '{action}' on ID 0 (Target Not Found). Logic should be handled by Controller.")
+        # LOGIC VALIDATION
+        try:
+            eid_int = int(element_id)
+            if eid_int > self.max_id:
+                print(f"[Browser] ⚠️ ID '{element_id}' exceeds max ID ({self.max_id}). Skipping.")
+                return False
+        except ValueError:
+            # element_id might be "None" or junk string
+            print(f"[Browser] ⚠️ Invalid ID format: '{element_id}'.")
+            return False
+
+        valid_actions = ["click", "type", "select"]
+        if action not in valid_actions:
+            print(f"[Browser] ❌ Unknown action type: '{action}'. Valid: {valid_actions}")
+            return False
+
+        if action in ["type", "select"] and not value:
+            print(f"[Browser] ❌ Action '{action}' requires a 'value', but none provided.")
             return False
 
         try:
@@ -104,41 +119,62 @@ class Browser:
 
             print(f"[Browser] Executing {action} on Element {element_id} ({element.tag_name})")
 
+            # EXECUTION HANDLERS 
             if action == "click":
-                element.click()
+                try:
+                    element.click()
+                except Exception:
+                    # FALLBACK: JavaScript Click (Bypasses overlays/interception)
+                    print(f"[Browser] ⚠️ Standard click failed. Attempting JS Force Click on {element_id}...")
+                    self.driver.execute_script("arguments[0].click();", element)
             
             elif action == "type":
-                element.clear()
+                # Clear first to ensure clean input
+                try:
+                    element.clear()
+                except:
+                    pass # Some inputs generally can't be cleared, ignore
                 element.send_keys(value)
-                element.send_keys(Keys.ENTER) # Often helpful to hit enter after typing
+                element.send_keys(Keys.ENTER) 
             
             elif action == "select":
-                # Check if it's a standard <select> tag
                 if element.tag_name.lower() == "select":
+                    from selenium.webdriver.support.ui import Select
                     select = Select(element)
-                    # Try selecting by text, then value, then index logic could be added
                     try:
                         select.select_by_visible_text(value)
                     except:
-                        # Fallback: try selecting by value attribute
-                        select.select_by_value(value)
+                        try:
+                            select.select_by_value(value)
+                        except:
+                            # Final hail mary: select by index if value is a number
+                            if value.isdigit():
+                                select.select_by_index(int(value))
                 else:
-                    # Non-standard dropdowns (divs/buttons) usually just need a click
-                    # The VLM usually predicts a sequence: Click Dropdown -> Click Option.
-                    # If it predicted "select" on a div, just clicking might work.
+                    # Non-standard dropdown logic
                     element.click()
+                    # In a real agent, you might need a follow-up action to click the option
+                    # But for single-step prediction, clicking the dropdown opener is often the first step
 
             time.sleep(1) # Wait for page reaction
             return True
 
+        # EXCEPTION HANDLING
         except NoSuchElementException:
-            print(f"[Browser] ❌ Element with data-m2w-id='{element_id}' not found in current DOM.")
+            # Model hallucinated an ID that doesn't exist
+            print(f"[Browser] ❌ Element [data-m2w-id='{element_id}'] not found. Model Hallucination?")
             return False
+        
         except ElementNotInteractableException:
-            print(f"[Browser] ❌ Element {element_id} found but not interactable.")
+            # Element exists but is hidden/disabled
+            print(f"[Browser] ❌ Element {element_id} found but not interactable (hidden or disabled).")
             return False
+            
         except Exception as e:
-            print(f"[Browser] ❌ Action failed: {e}")
+            # StaleElementReferenceException falls here too
+            # Print the class name of the error for better debugging
+            error_name = type(e).__name__
+            print(f"[Browser] ❌ Critical Action Failure ({error_name}): {e}")
             return False
 
     def scroll(self, direction="down", amount=None):
