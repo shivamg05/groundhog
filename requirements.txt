@@ -1,0 +1,8 @@
+selenium
+webdriver_manager
+transformers
+peft
+bitsandbytes
+accelerate
+pillow
+beautifulsoup4
