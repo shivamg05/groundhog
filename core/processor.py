@@ -49,6 +49,7 @@ class Processor:
     def distill_dom(self, html_string):
         """
         Parses raw HTML and returns a compact, token-efficient string representation.
+        ONLY includes elements that are currently visible in the viewport.
         CRITICAL: Matches the format used in training (groundhog-data-processing.ipynb).
         """
         soup = BeautifulSoup(html_string, "html.parser")
@@ -72,6 +73,8 @@ class Processor:
             # use our custom injected ID
             uid = tag.attrs.get("data-m2w-id", "")
 
+            is_visible = tag.attrs.get("data-m2w-visible", "false") == "true"
+
             # condition A: Header (Keep for context, even without ID)
             if tag.name in HEADER_TAGS:
                 text = self.clean_text(tag.get_text(separator=" ", strip=True))
@@ -83,7 +86,10 @@ class Processor:
             if not uid:
                 continue
 
-            #condition C: Interactive check
+            #condition C: visibility + interactive check
+            if not is_visible:
+                continue
+
             is_interactive_tag = tag.name in INTERACTIVE_TAGS
             
             role = tag.attrs.get("role", "")
