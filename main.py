@@ -17,7 +17,8 @@ def main():
     parser.add_argument("--url", type=str, required=True, help="The starting URL")
     parser.add_argument("--steps", type=int, default=15, help="Max steps to execute")
     parser.add_argument("--headless", action="store_true", help="Run browser in headless mode (no visible window)")
-    
+    parser.add_argument("--auto-close", action="store_true", help="Close browser immediately after task ends")
+
     args = parser.parse_args()
 
     print(f"\n🐹 Initializing Groundhog Agent...")
@@ -55,10 +56,25 @@ def main():
         success = agent.run_task(args.goal, args.url, args.steps)
         duration = time.time() - start_time
 
+        print("\n" + "="*40)
         if success:
-            print(f"\n✨ Task Completed Successfully in {duration:.2f}s!")
+            final_url = browser.driver.current_url
+            print(f"✨ TASK COMPLETED in {duration:.2f}s")
+            print(f"🔗 Final URL: {final_url}")
+            
+            #save proof
+            proof_path = "groundhog_success.png"
+            browser.driver.save_screenshot(proof_path)
+            print(f"🖼️  Screenshot saved to: {proof_path}")
+            
+            # handoff to user
+            if not args.headless and not args.auto_close:
+                print("\n👀 Browser is still open. You can interact with the page now.")
+                input("⌨️  Press Enter to close the agent and exit...")
         else:
-            print(f"\n💀 Task Failed or Hit Max Steps ({duration:.2f}s).")
+            print(f"💀 Task Failed or Hit Max Steps ({duration:.2f}s).")
+            if not args.headless and not args.auto_close:
+                input("⌨️  Press Enter to close debug view...")
             
     except KeyboardInterrupt:
         print("\n\n🛑 User stopped execution.")
