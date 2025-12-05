@@ -1,6 +1,7 @@
 import time
 import json
 import re
+import os
 from core.browser import Browser
 from core.processor import Processor
 from core.model import ModelEngine
@@ -58,6 +59,10 @@ class AgentController:
         print(f"\n🚀 [Agent] Starting Task: {goal}")
         print(f"   [Agent] URL: {start_url}")
         
+        debug_dir = os.path.join("debug_traces", f"task_{int(time.time())}")
+        os.makedirs(debug_dir, exist_ok=True)
+        print(f"   [Debug] Saving traces to: {debug_dir}")
+
         self.browser.navigate(start_url)
         
         for step in range(1, max_steps + 1):
@@ -66,7 +71,14 @@ class AgentController:
             screenshot, raw_html = self.browser.capture_state()
             
             processed_img = self.processor.process_image(screenshot)
+
+            processed_img.save(os.path.join(debug_dir, f"step_{step}_view.png"))
+
             distilled_dom = self.processor.distill_dom(raw_html)
+
+            with open(os.path.join(debug_dir, f"step_{step}_dom.txt"), "w", encoding="utf-8") as f:
+                f.write(distilled_dom)
+
             prompt = self.processor.format_prompt(goal, distilled_dom)
 
             valid_ids = self._get_valid_ids_from_dom(distilled_dom)
@@ -75,6 +87,9 @@ class AgentController:
             print("[Agent] Thinking...")
             raw_pred = self.model.predict(processed_img, prompt)
             # print(f"[Debug] Raw Model Output: {raw_pred}")
+
+            with open(os.path.join(debug_dir, f"step_{step}_output.txt"), "w", encoding="utf-8") as f:
+                f.write(raw_pred)
 
             action_dict = self._extract_json(raw_pred)
             

@@ -94,7 +94,7 @@ class ModelEngine:
         with torch.no_grad():
             generated_ids = self.model.generate(
                 **inputs,
-                max_new_tokens=128,
+                max_new_tokens=512,
                 do_sample=False,
                 temperature=0.0
             )
