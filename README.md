@@ -7,7 +7,7 @@ Groundhog is a **local-first autonomous web agent** that navigates the internet 
 
 Unlike most agents that rely on expensive, closed-source APIs (like GPT-4o), Groundhog runs entirely on **open-source models** (Qwen2.5-VL) that you can run yourself.
 
-## 🚀 Try it Now (Free)
+## 🚀 Try it Now
 
 You don't need a GPU to try this! I have prepared a Google Colab notebook that installs Chrome, loads the model, and launches a web interface for you.
 
