@@ -2,16 +2,13 @@ import os
 import time
 import io
 from PIL import Image
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
+import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, ElementNotInteractableException
-from webdriver_manager.chrome import ChromeDriverManager
 
 class Browser:
     def __init__(self, headless=False, script_path=None):
@@ -20,7 +17,7 @@ class Browser:
         """
         self.max_id = 0
 
-        options = Options()
+        options = uc.ChromeOptions()
         if headless:
             options.add_argument("--headless=new")
         
@@ -31,7 +28,17 @@ class Browser:
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
 
-        self.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+        linux_binary_path = "/usr/bin/google-chrome"
+
+        if os.path.exists(linux_binary_path):
+            self.driver = uc.Chrome(
+                options=options, 
+                browser_executable_path=linux_binary_path,
+                version_main=None # Let UC auto-detect version
+            )
+        else:
+            self.driver = uc.Chrome(options=options)
+
         self.wait = WebDriverWait(self.driver, 10)
 
         # Load the JS stamper script
@@ -53,7 +60,7 @@ class Browser:
         self.driver.get(url)
         try:
             self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-            time.sleep(2)  # Small buffer for dynamic content to settle
+            time.sleep(3)  # Small buffer for dynamic content to settle
         except TimeoutException:
             print("[Browser] Warning: Timeout waiting for page load, proceeding anyway.")
 
@@ -70,8 +77,12 @@ class Browser:
         # 1. Inject IDs
         # We execute the script we loaded. It returns the max ID used (useful for debugging)
         max_id = self.driver.execute_script(self.stamper_js)
-        self.max_id = int(max_id)
-        print(f"[Browser] Stamped page. Max ID: {self.max_id}")
+        if max_id is None:
+            self.max_id = 0
+            print("[Browser] ⚠️ Warning: JS returned None. Max ID set to 0.")
+        else:
+            self.max_id = int(max_id)
+            print(f"[Browser] Stamped page. Max ID: {self.max_id}")
 
         # 2. Get HTML
         # We need the outerHTML of the document element to get the attributes we just added

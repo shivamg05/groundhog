@@ -9,3 +9,4 @@ beautifulsoup4
 webdriver_manager
 gradio
 huggingface_hub
+undetected-chromedriver
