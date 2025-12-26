@@ -45,8 +45,8 @@ def run_agent_interactive(goal, url):
         browser.quit()
 
 # --- BUILD UI ---
-with gr.Blocks(title="🐹 Groundhog Agent") as demo:
-    gr.Markdown("# 🐹 Groundhog: Autonomous Web Agent")
+with gr.Blocks(title="🦫 Groundhog Agent") as demo:
+    gr.Markdown("# 🦫 Groundhog: Autonomous Web Agent")
     gr.Markdown("Enter a goal and a URL. The agent will open a headless browser and you can watch it work below.")
     
     with gr.Row():
