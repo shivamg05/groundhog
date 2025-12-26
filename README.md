@@ -9,7 +9,7 @@ Unlike most agents that rely on expensive, closed-source APIs (like GPT-4o), Gro
 
 ## 🚀 Try it Now
 
-You don't need a GPU to try this! I have prepared a Google Colab notebook that installs Chrome, loads the model, and launches a web interface for you.
+You don't need a GPU to try this! I have prepared a Google Colab notebook that installs Chrome, loads the model, and launches a web interface for you to watch the agent work.
 
 [**Click here to launch the Demo**](https://colab.research.google.com/github/shivamg05/groundhog/blob/main/notebooks/demo.ipynb)
 
