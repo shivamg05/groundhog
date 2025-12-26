@@ -6,3 +6,6 @@ bitsandbytes
 accelerate
 pillow
 beautifulsoup4
+webdriver_manager
+gradio
+huggingface_hub
