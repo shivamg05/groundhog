@@ -140,11 +140,16 @@ class Processor:
         """
         prompt = (
             f"You are a web agent. Analyze the screenshot and the list of elements.\n"
-            f"The element list is formatted as: [ID] <Tag> Text (Attributes).\n"
-            f"If the target element is not in the list, select ID 0.\n"
-            f"Your task is to select the correct Element ID to perform the action on.\n\n"
+            f"The element list is formatted as: [element_id] <Tag> Text (Attributes).\n"
+            f"If the target element is not in the list, select ID 0 to scroll down on the page.\n"
+            f"Your task is to select the correct Element ID to perform the chosen action on.\n\n"
             f"TASK: {goal}\n\n"
             f"ELEMENTS:\n{distilled_dom}\n\n"
-            f"Generate a JSON with keys: action, element_id, value, is_finished."
+            f"Generate a JSON with keys: action, element_id, value, is_finished. "
+            f"The action chosen can be either 'click', 'type', or 'select'.\n"
+            #not sure if need to add anything to the prompt regarding the is_finished key
+                #keeps on setting is_finished to true in the response where it still has an action to take.
+            f"IMPORTANT: Set 'is_finished' to true ONLY when the task is fully completed "
+            f"and you have reached the final goal state. Do not set it to true after intermediate steps."
         )
         return prompt
