@@ -24,7 +24,7 @@ def run_agent_interactive(goal, url):
             # If repo_id is provided in config, use that. Otherwise assumes local or standard.
             # For the demo, we assume the user has access to the model via HF or local path.
             # Using your HF repo ID here is best for the Colab demo!
-            model_engine = ModelEngine(adapter_path="shivamg05/groundhog-v1") 
+            model_engine = ModelEngine(model_id="shivamg05/groundhog-v1", adapter_path=None)
     except Exception as e:
         yield None, f"❌ Error loading model: {e}"
         return

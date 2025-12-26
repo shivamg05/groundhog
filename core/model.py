@@ -5,27 +5,23 @@ from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration, Bits
 from peft import PeftModel
 
 class ModelEngine:
-    def __init__(self, base_model_id="Qwen/Qwen2.5-VL-7B-Instruct", adapter_path=None):
+    def __init__(self, model_id="Qwen/Qwen2.5-VL-7B-Instruct", adapter_path=None):
         """
-        Initializes the VLM with 4-bit quantization and loads the LoRA adapter.
+        Initializes the VLM.
+        
+        Args:
+            model_id (str): The Hugging Face ID or local path of the model to load.
+                            If using a merged model, pass that ID here.
+            adapter_path (str, optional): If using LoRA, pass the adapter ID/Path here.
+                                          If None, it assumes model_id is a full model.
         """
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         
         if self.device == "cpu":
-            print("⚠️ [Model] WARNING: Running on CPU/MPS. 4-bit quantization (BitsAndBytes) strictly requires CUDA.")
-            print("   This might crash or be extremely slow on a MacBook.")
+            print("⚠️ [Model] WARNING: Running on CPU. 4-bit quantization requires CUDA.")
 
-        # Resolve Adapter Path
-        # Defaults to groundhog/groundhog-qwen/
-        if adapter_path is None:
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            # Go up two levels: groundhog_agent/core -> groundhog_agent -> groundhog -> groundhog-qwen
-            adapter_path = os.path.join(current_dir, "..", "groundhog-qwen")
-
-        if not os.path.exists(adapter_path):
-            raise FileNotFoundError(f"LoRA adapter not found at: {adapter_path}")
-
-        # Configure 4-bit Quantization (Exact match to training)
+        #configure 4-bit Quantization
+        # This keeps the model small (~6GB VRAM) even though it's the full 7B
         bnb_config = BitsAndBytesConfig(
             load_in_4bit=True,
             bnb_4bit_use_double_quant=True,
@@ -33,36 +29,28 @@ class ModelEngine:
             bnb_4bit_compute_dtype=torch.bfloat16
         )
 
-        # Load Processor
-        print(f"[Model] Loading Processor: {base_model_id}...")
-        self.processor = AutoProcessor.from_pretrained(base_model_id, trust_remote_code=True)
+        # load Processor
+        print(f"[Model] Loading Processor: {model_id}...")
+        self.processor = AutoProcessor.from_pretrained(model_id, trust_remote_code=True)
 
-        # 4. Load Base Model
-        print(f"[Model] Loading Base Model (4-bit)...")
-        self.base_model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-            base_model_id,
+        # load Model
+        print(f"[Model] Loading Weights from: {model_id}...")
+        self.model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+            model_id,
             device_map="auto",
             quantization_config=bnb_config,
             low_cpu_mem_usage=True
         )
 
-        # Attach LoRA Adapter
-        print(f"[Model] Loading LoRA Adapter from {adapter_path}...")
-        self.model = PeftModel.from_pretrained(self.base_model, adapter_path)
+        # attach LoRA Adapter (ONLY if provided)
+        if adapter_path:
+            print(f"[Model] Loading LoRA Adapter from {adapter_path}...")
+            self.model = PeftModel.from_pretrained(self.model, adapter_path)
+        
         self.model.eval()
         print("[Model] ✅ Ready.")
 
     def predict(self, image: Image.Image, prompt_text: str):
-        """
-        Runs inference on a single example.
-        
-        Args:
-            image (PIL.Image): The processed, resized image (1024x1280)
-            prompt_text (str): The formatted prompt string (TASK + DOM)
-        
-        Returns:
-            str: The raw generated text (usually a JSON string)
-        """
         # format the conversation
         messages = [
             {
@@ -79,7 +67,7 @@ class ModelEngine:
             messages, tokenize=False, add_generation_prompt=True
         )
 
-        # process Inputs (Collate equivalent for single sample)
+        # process Inputs
         inputs = self.processor(
             text=[text_input],
             images=[image],
@@ -87,7 +75,6 @@ class ModelEngine:
             return_tensors="pt",
         )
         
-        # move inputs to GPU
         inputs = inputs.to(self.device)
 
         # generate
@@ -100,7 +87,6 @@ class ModelEngine:
             )
 
         # decode
-        # strip input tokens from the output to get just the model's response
         input_len = inputs.input_ids.shape[1]
         generated_ids_trimmed = [
             out_ids[input_len:] for out_ids in generated_ids
