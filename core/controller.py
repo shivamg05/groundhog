@@ -52,85 +52,84 @@ class AgentController:
         ids = re.findall(r"\[(\d+)\]", distilled_dom)
         return set(ids)
 
-    def run_task(self, goal, start_url, max_steps=15):
+    def run_task_generator(self, goal, start_url, max_steps=15):
         """
-        Main Agent Loop
+        Generator version of the loop for UIs (Gradio).
+        Yields a dictionary at every step: 
+        {
+            "screenshot": PIL_Image, 
+            "log": "text string", 
+            "done": bool
+        }
         """
         print(f"\n🚀 [Agent] Starting Task: {goal}")
-        print(f"   [Agent] URL: {start_url}")
-        
-        debug_dir = os.path.join("debug_traces", f"task_{int(time.time())}")
-        os.makedirs(debug_dir, exist_ok=True)
-        print(f"   [Debug] Saving traces to: {debug_dir}")
-
         self.browser.navigate(start_url)
         
+        logs = [f"🚀 Goal: {goal}", f"🌐 URL: {start_url}"]
+        
         for step in range(1, max_steps + 1):
-            print(f"\n--- Step {step}/{max_steps} ---")
+            step_log = f"\n--- Step {step}/{max_steps} ---"
+            print(step_log)
+            logs.append(step_log)
             
+            # 1. Capture
             screenshot, raw_html = self.browser.capture_state()
             
+            # YIELD UPDATE TO UI (Before processing)
+            yield {"screenshot": screenshot, "log": "\n".join(logs), "done": False}
+            
+            # 2. Process
             processed_img = self.processor.process_image(screenshot)
-
-            processed_img.save(os.path.join(debug_dir, f"step_{step}_view.png"))
-
             distilled_dom = self.processor.distill_dom(raw_html)
-
-            with open(os.path.join(debug_dir, f"step_{step}_dom.txt"), "w", encoding="utf-8") as f:
-                f.write(distilled_dom)
-
             prompt = self.processor.format_prompt(goal, distilled_dom)
-
             valid_ids = self._get_valid_ids_from_dom(distilled_dom)
 
-            # inference
+            # 3. Inference
             print("[Agent] Thinking...")
             raw_pred = self.model.predict(processed_img, prompt)
-            # print(f"[Debug] Raw Model Output: {raw_pred}")
-
-            with open(os.path.join(debug_dir, f"step_{step}_output.txt"), "w", encoding="utf-8") as f:
-                f.write(raw_pred)
-
             action_dict = self._extract_json(raw_pred)
             
             if not action_dict:
-                print("[Agent] ⚠️ Model output invalid. Retrying step...")
+                err = "[Agent] ⚠️ Model output invalid. Retrying..."
+                print(err)
+                logs.append(err)
                 continue
 
-            print(f"[Agent] Prediction: {action_dict}")
-
-            # 5. Logic & Execution
+            # 4. Parse
             if action_dict.get("is_finished", False):
-                print(f"✅ [Agent] Task Marked Complete by Model.")
-                return True
+                msg = f"✅ Task Complete. Result: {action_dict.get('value', '')}"
+                print(msg)
+                logs.append(msg)
+                yield {"screenshot": screenshot, "log": "\n".join(logs), "done": True}
+                return
 
             element_id = str(action_dict.get("element_id", "0"))
-            if element_id.lower() in ["none", "null", "nan", "undefined"]:
-                element_id = "0"
-
+            if element_id.lower() in ["none", "null", "nan", "undefined"]: element_id = "0"
             action_type = action_dict.get("action", "").lower()
             value = action_dict.get("value", "")
 
-            # --- HANDLE ID 0 (Target Not Visible) ---
+            log_action = f"🤖 Predicted: {action_type} on {element_id} ({value})"
+            print(log_action)
+            logs.append(log_action)
+
+            # 5. Validate & Execute (Logic copied from previous steps)
+            if element_id != "0" and action_type != "scroll" and element_id not in valid_ids:
+                logs.append(f"⚠️ Hallucination (ID {element_id}). Retrying...")
+                continue # Retry loop
+
             if element_id == "0" or action_type == "scroll":
-                print("[Agent] Target element not in current view (ID 0). Scrolling down...")
+                logs.append("📜 Scrolling...")
                 self.browser.scroll("down")
                 time.sleep(2)
                 continue
-            
-            elif element_id in valid_ids:
-                success = self.browser.execute_action(action_type, element_id, value)
-                if not success:
-                    print("[Agent] ⚠️ Action failed on valid ID")
-                time.sleep(2)
-                continue
-            # CASE C: Hallucination (ID is not 0, not scroll, and NOT in DOM)
-            else:
-                print(f"[Agent] ⚠️ Hallucination detected: ID {element_id} was not in the processed DOM. Retrying step...")
-                # We simply 'continue' here. 
-                # Since we didn't scroll or act, the browser state remains identical.
-                # The next loop iteration will take the same screenshot and prompt the model again.
-                continue
 
-        print("❌ [Agent] Max steps reached. Task incomplete.")
-        return False
+            success = self.browser.execute_action(action_type, element_id, value)
+            if not success:
+                logs.append("⚠️ Action failed.")
+            
+            time.sleep(2)
+
+        fail_msg = "❌ Max steps reached."
+        print(fail_msg)
+        logs.append(fail_msg)
+        yield {"screenshot": screenshot, "log": "\n".join(logs), "done": True}
