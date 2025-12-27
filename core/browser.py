@@ -66,16 +66,16 @@ class Browser:
 
     def capture_state(self):
         """
-        1. Injects the JS to stamp IDs (data-m2w-id) and visibility (data-m2w-visible).
-        2. Captures the full HTML snapshot.
-        3. Captures the screenshot as a PIL Image.
+        Injects the JS to stamp IDs (data-m2w-id) and visibility (data-m2w-visible),
+        Captures the full HTML snapshot,
+        Captures the screenshot as a PIL Image
         
         Returns:
-            screenshot (PIL.Image): The raw screenshot.
-            html (str): The raw HTML string with injected IDs.
+            screenshot (PIL.Image): The raw screenshot
+            html (str): The raw HTML string with injected IDs
         """
-        # 1. Inject IDs
-        # We execute the script we loaded. It returns the max ID used (useful for debugging)
+        # Inject IDs
+        # execute the script we loaded
         max_id = self.driver.execute_script(self.stamper_js)
         if max_id is None:
             self.max_id = 0
@@ -84,11 +84,11 @@ class Browser:
             self.max_id = int(max_id)
             print(f"[Browser] Stamped page. Max ID: {self.max_id}")
 
-        # 2. Get HTML
+        # Get HTML
         # We need the outerHTML of the document element to get the attributes we just added
         raw_html = self.driver.execute_script("return document.documentElement.outerHTML;")
 
-        # 3. Get Screenshot
+        # Get Screenshot
         # We get it as PNG bytes and convert to PIL Image in memory
         png_data = self.driver.get_screenshot_as_png()
         screenshot = Image.open(io.BytesIO(png_data)).convert("RGB")
@@ -159,7 +159,6 @@ class Browser:
                         try:
                             select.select_by_value(value)
                         except:
-                            # Final hail mary: select by index if value is a number
                             if value.isdigit():
                                 select.select_by_index(int(value))
                 else:

@@ -72,34 +72,27 @@ class AgentController:
             print(step_header)
             logs.append(step_header)
             
-            # 1. Capture
             screenshot, raw_html = self.browser.capture_state()
             
-            # 2. Process
             processed_img = self.processor.process_image(screenshot)
             distilled_dom = self.processor.distill_dom(raw_html)
             prompt = self.processor.format_prompt(goal, distilled_dom)
             
-            # DEBUG LOG: Show user how many elements the model actually sees
             element_count = distilled_dom.count('\n') + 1
             dom_msg = f"👁️ Processed DOM: {element_count} visible elements."
             print(dom_msg)
             logs.append(dom_msg)
 
-            # YIELD HERE: Show the user the screen BEFORE inference starts (so they don't wait)
             yield {"screenshot": processed_img, "log": "\n".join(logs), "done": False}
 
-            # 3. Inference
             print("[Agent] Thinking...")
             logs.append("🧠 Thinking...")
             yield {"screenshot": processed_img, "log": "\n".join(logs), "done": False}
             
             raw_pred = self.model.predict(processed_img, prompt)
             
-            # 4. Parse
             action_dict = self._extract_json(raw_pred)
             
-            # Log the raw prediction so you can see if the model is outputting garbage
             print(f"[Agent] Raw Output: {raw_pred}")
             
             if not action_dict:
@@ -108,7 +101,6 @@ class AgentController:
                 logs.append(err)
                 continue
 
-            # 5. Execution Logic
             if action_dict.get("is_finished", False):
                 msg = f"✅ Task Complete. Result: {action_dict.get('value', '')}"
                 print(msg)
@@ -123,29 +115,27 @@ class AgentController:
             action_type = action_dict.get("action", "").lower()
             value = action_dict.get("value", "")
 
-            # Log the parsed action
             action_msg = f"🤖 Action: {action_type} on ID {element_id} ({value})"
             logs.append(action_msg)
             yield {"screenshot": processed_img, "log": "\n".join(logs), "done": False}
 
-            # 6. Validation & Execution
             valid_ids = self._get_valid_ids_from_dom(distilled_dom)
 
-            # Case: Not in DOM (Hallucination)
+            # case: Not in DOM - hallucination
             if element_id != "0" and action_type != "scroll" and element_id not in valid_ids:
                 warn = f"⚠️ Hallucination: ID {element_id} not visible. Retrying..."
                 print(warn)
                 logs.append(warn)
                 continue 
 
-            # Case: Scroll
+            # case: scroll
             if element_id == "0" or action_type == "scroll":
                 logs.append("📜 Scrolling down...")
                 self.browser.scroll("down")
                 time.sleep(2)
                 continue
 
-            # Case: Execute
+            # case: execute
             success = self.browser.execute_action(action_type, element_id, value)
             if not success:
                 logs.append("⚠️ Browser action failed.")

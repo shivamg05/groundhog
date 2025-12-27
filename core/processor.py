@@ -147,8 +147,6 @@ class Processor:
             f"ELEMENTS:\n{distilled_dom}\n\n"
             f"Generate a JSON with keys: action, element_id, value, is_finished. "
             f"The action chosen can be either 'click', 'type', or 'select'.\n"
-            #not sure if need to add anything to the prompt regarding the is_finished key
-                #keeps on setting is_finished to true in the response where it still has an action to take.
             f"IMPORTANT: Set 'is_finished' to true ONLY when the task is fully completed "
             f"and you have reached the final goal state. Do not set it to true after intermediate steps."
         )
