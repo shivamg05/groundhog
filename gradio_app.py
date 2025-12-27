@@ -24,6 +24,18 @@ def shutdown_system():
     gc.collect()
     os.kill(os.getpid(), signal.SIGTERM)
 
+def stop_task_action():
+    """
+    Called when the Stop button is clicked.
+    Resets the UI immediately.
+    """
+    return (
+        None,                                           # Clear Browser Image
+        "🛑 Task Stopped by User.",                     # Set Log to Stopped
+        gr.update(value="Run Agent", interactive=True), # Enable Run
+        gr.update(interactive=False)                    # Disable Stop
+    )
+
 def run_agent_interactive(goal, url):
     """
     This function drives the Gradio UI.
@@ -44,7 +56,6 @@ def run_agent_interactive(goal, url):
             global model_engine
             model_engine = ModelEngine(model_id="shivamg05/groundhog-v1", adapter_path=None)
     except Exception as e:
-        # Reset buttons on error
         yield (
             None, 
             f"❌ Error loading model: {e}", 
@@ -61,11 +72,13 @@ def run_agent_interactive(goal, url):
         gr.update(interactive=True)
     )
 
-    browser = Browser(headless=True)
-    processor = Processor()
-    agent = AgentController(browser, processor, model_engine)
-
+    browser = None
+    
     try:
+        browser = Browser(headless=True)
+        processor = Processor()
+        agent = AgentController(browser, processor, model_engine)
+
         # Loop through generator
         for update in agent.run_task_generator(goal, url):
             yield (
@@ -83,16 +96,10 @@ def run_agent_interactive(goal, url):
             gr.update(interactive=False)
         )
     finally:
-        browser.quit()
-        # FINISHED/STOPPED
-        yield (
-            None, 
-            "Task Process Ended.", 
-            gr.update(value="Run Agent", interactive=True), 
-            gr.update(interactive=False)
-        )
-
-# BUILD UI
+        if browser:
+            browser.quit()
+        
+# --- BUILD UI ---
 with gr.Blocks(title="🦫 Groundhog Agent") as demo:
     gr.Markdown("# 🦫 Groundhog: Autonomous Web Agent")
     
@@ -102,7 +109,7 @@ with gr.Blocks(title="🦫 Groundhog Agent") as demo:
     
     with gr.Row():
         run_btn = gr.Button("Run Agent", variant="primary", scale=2)
-        # Initialize Stop button as DISABLED
+        # Stop button disabled by default
         stop_btn = gr.Button("⏹️ Stop Task", variant="stop", scale=1, interactive=False)
     
     with gr.Row():
@@ -123,9 +130,9 @@ with gr.Blocks(title="🦫 Groundhog Agent") as demo:
 
     # Stop Task Event
     stop_btn.click(
-        fn=None,
+        fn=stop_task_action,
         inputs=None,
-        outputs=None,
+        outputs=[browser_view, log_output, run_btn, stop_btn],
         cancels=[run_event]
     )
 
