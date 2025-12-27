@@ -97,8 +97,8 @@ with gr.Blocks(title="🦫 Groundhog Agent") as demo:
     gr.Markdown("# 🦫 Groundhog: Autonomous Web Agent")
     
     with gr.Row():
-        goal_input = gr.Textbox(label="Goal", placeholder="Find the contact email for IANA", scale=2)
-        url_input = gr.Textbox(label="Starting URL", value="https://www.iana.org/domains", scale=1)
+        goal_input = gr.Textbox(label="Goal", placeholder="Find the cheapest laptop and add it to cart", scale=2)
+        url_input = gr.Textbox(label="Starting URL", placeholder="https://www.bestbuy.com/home", scale=1)
     
     with gr.Row():
         run_btn = gr.Button("Run Agent", variant="primary", scale=2)
